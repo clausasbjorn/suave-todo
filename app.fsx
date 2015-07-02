@@ -1,6 +1,13 @@
 #r "packages/Suave/lib/net40/Suave.dll"
+#r "System.Data.dll"
+#r "System.Data.Linq.dll"
+#r "FSharp.Data.TypeProviders.dll"
 #load "static.fsx"
 
+open System
+open System.Linq
+open System.Data
+open System.Data.Linq
 open Suave
 open Suave.Web
 open Suave.Http
@@ -10,13 +17,23 @@ open Suave.Http.Redirection
 open Suave.Http.Files
 open Suave.Http.RequestErrors
 open Suave.Http.Applicatives
+open Microsoft.FSharp.Data.TypeProviders
+open Microsoft.FSharp.Linq
 open Static
 
-let mutable id = 0
-let mutable todos = []
+type Sql = 
+    SqlDataConnection<"YOUR CONNECTION STRING">
+
+let getDb () =
+    Sql.GetDataContext()
 
 let getTodos () =
-    todos
+    let db = getDb () 
+    query {
+        for t in db.TodoItems do
+        select (t.TodoItemId, t.Todo)
+    } 
+    |> Seq.toList
     |> List.map (fun t -> sprintf "{ \"id\": %d, \"text\": \"%s\" }" (fst t) (snd t))
     |> String.concat ","
     |> sprintf "{ \"todos\": [ %s ] }" 
@@ -24,18 +41,23 @@ let getTodos () =
 let add (text : Choice<string, string>) =
     match text with
     | Choice1Of2 t -> 
-        let next = id + 1
-        id    <- next
-        todos <- (id, t) :: todos
+        let db = getDb ()
+        let record = new Sql.ServiceTypes.TodoItems(Todo = t)
+        db.TodoItems.InsertOnSubmit(record)
+        db.DataContext.SubmitChanges()
         ()
     | Choice2Of2 t -> 
         ()
     
 let remove id = 
-    let removed =
-        todos
-        |> List.filter (fun t -> (fst t) <> id)
-    todos <- removed
+    let db = getDb () 
+    let deleteRowsFrom (table:Table<_>) rows = table.DeleteAllOnSubmit(rows)
+    query {
+        for t in db.TodoItems do
+        where (t.TodoItemId.Equals(id))
+        select t
+    } |> deleteRowsFrom db.TodoItems
+    db.DataContext.SubmitChanges()
     ()
 
 let app : WebPart =
