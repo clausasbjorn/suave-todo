@@ -1,7 +1,7 @@
 #r "packages/Suave/lib/net40/Suave.dll"
 #r "System.Data.dll"
 #r "System.Data.Linq.dll"
-#r "FSharp.Data.TypeProviders.dll"
+#r "packages/FSharp.Data.TypeProviders/lib/net40/FSharp.Data.TypeProviders.dll"
 #load "static.fsx"
 
 open System
@@ -11,12 +11,12 @@ open System.Data.Linq
 open Suave
 open Suave.Web
 open Suave.Http
-open Suave.Types
-open Suave.Http.Successful
-open Suave.Http.Redirection
-open Suave.Http.Files
-open Suave.Http.RequestErrors
-open Suave.Http.Applicatives
+open Suave.Successful
+open Suave.Redirection
+open Suave.Files
+open Suave.Filters
+open Suave.RequestErrors
+
 open Microsoft.FSharp.Data.TypeProviders
 open Microsoft.FSharp.Linq
 open Static
