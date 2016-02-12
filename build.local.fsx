@@ -12,10 +12,11 @@ open Fake
 
 open System
 open System.IO
+open System.Net
 open Suave
 open Suave.Http
+open Suave.Operators
 open Suave.Web
-open Suave.Types
 open Microsoft.FSharp.Compiler.Interactive.Shell
 
 // --------------------------------------------------------------------------------------
@@ -44,7 +45,7 @@ let reportFsiError (e:exn) =
 let reloadScript () = 
   try
     traceImportant "Reloading app.fsx script..."
-    let appFsx = __SOURCE_DIRECTORY__ @@ "app.fsx"
+    let appFsx = __SOURCE_DIRECTORY__ </> "app.fsx"
     fsiSession.EvalInteraction(sprintf "#load @\"%s\"" appFsx)
     fsiSession.EvalInteraction("open App")
     match fsiSession.EvalExpression("app") with
@@ -59,8 +60,8 @@ let reloadScript () =
 let currentApp = ref (fun _ -> async { return None })
 
 let mimeTypes =
-  Http.Writers.defaultMimeTypesMap
-    >=> (function | ".json" -> Http.Writers.mkMimeType "text/json" true | _ -> None)
+  Writers.defaultMimeTypesMap
+    @@ (function | ".json" -> Writers.mkMimeType "text/json" true | _ -> None)
 
 let webConfig = { defaultConfig with mimeTypesMap = mimeTypes }
 
@@ -68,7 +69,7 @@ let serverConfig =
   { webConfig with
       homeFolder = Some __SOURCE_DIRECTORY__
       logger = Logging.Loggers.saneDefaultsFor Logging.LogLevel.Debug
-      bindings = [ HttpBinding.mk' HTTP  "127.0.0.1" 8083] }
+      bindings = [ HttpBinding.mk HTTP IPAddress.Loopback 8083us ] }
 
 let reloadAppServer () =
   reloadScript() |> Option.iter (fun app -> 
@@ -86,7 +87,7 @@ Target "run" (fun _ ->
   System.Diagnostics.Process.Start("http://localhost:8083") |> ignore
   
   // Watch for changes & reload when app.fsx changes
-  use watcher = !! (__SOURCE_DIRECTORY__ @@ "*.*") |> WatchChanges (fun _ -> reloadAppServer())
+  use watcher = !! (__SOURCE_DIRECTORY__ </> "*.*") |> WatchChanges (fun _ -> reloadAppServer())
   traceImportant "Waiting for app.fsx edits. Press any key to stop."
   System.Console.ReadLine() |> ignore
 )

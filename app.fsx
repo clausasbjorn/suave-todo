@@ -1,7 +1,7 @@
 #r "packages/Suave/lib/net40/Suave.dll"
 #r "System.Data.dll"
 #r "System.Data.Linq.dll"
-#r "FSharp.Data.TypeProviders.dll"
+#r "packages/FSharp.Data.TypeProviders/lib/net40/FSharp.Data.TypeProviders.dll"
 #load "static.fsx"
 
 open System
@@ -11,18 +11,19 @@ open System.Data.Linq
 open Suave
 open Suave.Web
 open Suave.Http
-open Suave.Types
-open Suave.Http.Successful
-open Suave.Http.Redirection
-open Suave.Http.Files
-open Suave.Http.RequestErrors
-open Suave.Http.Applicatives
-open Microsoft.FSharp.Data.TypeProviders
-open Microsoft.FSharp.Linq
+open Suave.Successful
+open Suave.Redirection
+open Suave.Files
+open Suave.Filters
+open Suave.Operators
+open Suave.RequestErrors
+
+open FSharp.Data.TypeProviders
+open FSharp.Linq
 open Static
 
 type Sql = 
-    SqlDataConnection<"YOUR CONNECTION STRING">
+    SqlDataConnection<"Data Source=.;Initial Catalog=ToDos;Asynchronous Processing=True;MultipleActiveResultSets=True;Trusted_Connection=True">
 
 let getDb () =
     Sql.GetDataContext()
@@ -62,14 +63,14 @@ let remove id =
 
 let app : WebPart =
     choose 
-        [ GET >>= choose
-            [ path "/static/app.js" >>= Writers.setMimeType "application/javascript" >>= OK script
-              path "/static/style.css" >>= Writers.setMimeType "text/css" >>= OK style
-              path "/" >>= OK html 
+        [ GET >=> choose
+            [ path "/static/app.js" >=> Writers.setMimeType "application/javascript" >=> OK script
+              path "/static/style.css" >=> Writers.setMimeType "text/css" >=> OK style
+              path "/" >=> OK html 
               //pathScan "/static/%s" (fun (filename) -> file (sprintf "./static/%s" filename)) 
-              path "/todos" >>= request (fun req -> OK (getTodos ())) ]   
-          POST >>= choose
-            [ path "/todos" >>= request (fun req -> add (req.formData "text") ; OK "") ]
-          DELETE >>= choose
+              path "/todos" >=> request (fun req -> OK (getTodos ())) ]   
+          POST >=> choose
+            [ path "/todos" >=> request (fun req -> add (req.formData "text") ; OK "") ]
+          DELETE >=> choose
             [ pathScan "/todos/%d" (fun (id) -> remove id ; OK "") ]       
         ]
