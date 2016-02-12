@@ -69,7 +69,7 @@ let serverConfig =
   { webConfig with
       homeFolder = Some __SOURCE_DIRECTORY__
       logger = Logging.Loggers.saneDefaultsFor Logging.LogLevel.Debug
-      bindings = [ HttpBinding.mk HTTP IPAddress.Loopback 8083us] }
+      bindings = [ HttpBinding.mk HTTP IPAddress.Loopback 8083us ] }
 
 let reloadAppServer () =
   reloadScript() |> Option.iter (fun app -> 

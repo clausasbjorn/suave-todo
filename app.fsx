@@ -15,14 +15,15 @@ open Suave.Successful
 open Suave.Redirection
 open Suave.Files
 open Suave.Filters
+open Suave.Operators
 open Suave.RequestErrors
 
-open Microsoft.FSharp.Data.TypeProviders
-open Microsoft.FSharp.Linq
+open FSharp.Data.TypeProviders
+open FSharp.Linq
 open Static
 
 type Sql = 
-    SqlDataConnection<"YOUR CONNECTION STRING">
+    SqlDataConnection<"Data Source=.;Initial Catalog=ToDos;Asynchronous Processing=True;MultipleActiveResultSets=True;Trusted_Connection=True">
 
 let getDb () =
     Sql.GetDataContext()
@@ -62,14 +63,14 @@ let remove id =
 
 let app : WebPart =
     choose 
-        [ GET >>= choose
-            [ path "/static/app.js" >>= Writers.setMimeType "application/javascript" >>= OK script
-              path "/static/style.css" >>= Writers.setMimeType "text/css" >>= OK style
-              path "/" >>= OK html 
+        [ GET >=> choose
+            [ path "/static/app.js" >=> Writers.setMimeType "application/javascript" >=> OK script
+              path "/static/style.css" >=> Writers.setMimeType "text/css" >=> OK style
+              path "/" >=> OK html 
               //pathScan "/static/%s" (fun (filename) -> file (sprintf "./static/%s" filename)) 
-              path "/todos" >>= request (fun req -> OK (getTodos ())) ]   
-          POST >>= choose
-            [ path "/todos" >>= request (fun req -> add (req.formData "text") ; OK "") ]
-          DELETE >>= choose
+              path "/todos" >=> request (fun req -> OK (getTodos ())) ]   
+          POST >=> choose
+            [ path "/todos" >=> request (fun req -> add (req.formData "text") ; OK "") ]
+          DELETE >=> choose
             [ pathScan "/todos/%d" (fun (id) -> remove id ; OK "") ]       
         ]
